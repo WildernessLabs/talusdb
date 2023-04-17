@@ -5,12 +5,23 @@ using System.Linq;
 
 namespace WildernessLabs.TalusDB
 {
+    /// <summary>
+    /// A set of TalusDB Tables
+    /// </summary>
     public class Database
     {
         private Dictionary<Type, object> _tableCache = new Dictionary<Type, object>();
 
+        /// <summary>
+        /// Gets the folder path that holds all of the TalusDB Tables
+        /// </summary>
         public string RootFolder { get; }
 
+        /// <summary>
+        /// Creates a new TalusDB Database
+        /// </summary>
+        /// <param name="rootFolder">Optional root folder for teh Database</param>
+        /// <exception cref="DirectoryNotFoundException"></exception>
         public Database(string? rootFolder = null)
         {
             if (rootFolder == null)
@@ -48,7 +59,14 @@ namespace WildernessLabs.TalusDB
             }
         }
 
-        public Table<T> CreateTable<T>(int maxRecords) where T : struct
+        /// <summary>
+        /// Creates a TalusDB Table for the give blittable type
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="maxElements"></param>
+        /// <returns></returns>
+        /// <exception cref="TalusException"></exception>
+        public Table<T> CreateTable<T>(int maxElements) where T : struct
         {
             if (TableExists<T>())
             {
@@ -57,13 +75,18 @@ namespace WildernessLabs.TalusDB
 
             lock (_tableCache)
             {
-                var table = new Table<T>(RootFolder, maxRecords);
+                var table = new Table<T>(RootFolder, maxElements);
                 AddTableMeta<T>();
                 _tableCache.Add(typeof(T), table);
                 return table;
             }
         }
 
+        /// <summary>
+        /// Drops (deletes) a Table by Table name
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <exception cref="TalusException"></exception>
         public void DropTable(string tableName)
         {
             if (!TableExists(tableName))
@@ -89,6 +112,11 @@ namespace WildernessLabs.TalusDB
             fi.Delete();
         }
 
+        /// <summary>
+        /// Drops (deletes) a Table by the Type is stores
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <exception cref="TalusException"></exception>
         public void DropTable<T>() where T : struct
         {
             if (!TableExists<T>())
@@ -114,6 +142,11 @@ namespace WildernessLabs.TalusDB
             fi.Delete();
         }
 
+        /// <summary>
+        /// Checks for the existance of a Table by name
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <returns></returns>
         public bool TableExists(string tableName)
         {
             lock (_tableCache)
@@ -129,6 +162,11 @@ namespace WildernessLabs.TalusDB
             return lines.Any(l => l.StartsWith($"{tableName}|"));
         }
 
+        /// <summary>
+        /// Checks for the existance of a Table by Element Type
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
         public bool TableExists<T>() where T : struct
         {
             lock (_tableCache)
@@ -145,6 +183,12 @@ namespace WildernessLabs.TalusDB
             return lines.Any(l => l.StartsWith($"{type.Name}|"));
         }
 
+        /// <summary>
+        /// Gets an existing Table for a specified Element Type
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        /// <exception cref="TalusException"></exception>
         public Table<T> GetTable<T>() where T : struct
         {
             if (!TableExists<T>())
@@ -174,6 +218,10 @@ namespace WildernessLabs.TalusDB
             }
         }
 
+        /// <summary>
+        /// Gets an array of all Table names
+        /// </summary>
+        /// <returns></returns>
         public string[] GetTableNames()
         {
             var path = Path.Combine(RootFolder, ".meta");

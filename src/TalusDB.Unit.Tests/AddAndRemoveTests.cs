@@ -27,7 +27,7 @@ namespace TalusDB.Unit.Tests
 
             t.Insert(source);
             Assert.Equal(1, t.Count);
-            var test = t.Select();
+            var test = t.Remove();
             Assert.Equal(source, test);
             Assert.Equal(0, t.Count);
         }
@@ -62,10 +62,10 @@ namespace TalusDB.Unit.Tests
             t.Insert(source2);
             Assert.Equal(2, t.Count);
 
-            var test = t.Select();
+            var test = t.Remove();
             Assert.Equal(source1, test);
             Assert.Equal(1, t.Count);
-            test = t.Select();
+            test = t.Remove();
             Assert.Equal(source2, test);
             Assert.Equal(0, t.Count);
         }

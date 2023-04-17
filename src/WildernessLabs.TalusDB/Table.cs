@@ -4,21 +4,24 @@ using System.Runtime.InteropServices;
 
 namespace WildernessLabs.TalusDB
 {
-    public enum StreamBehavior
-    {
-        AlwaysNew,
-        KeepOpen
-    }
-
+    /// <summary>
+    /// A TalusDB storage file for telemetry data
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class Table<T> where T : struct
     {
         private const int HeaderSize = 32; // currently only 16 used - leaving space for future additions
+        private const int HeadHeaderOffset = 0;
+        private const int TailHeaderOffset = 4;
+        private const int StrideHeaderOffset = 8;
+        private const int MaxElementsHeaderOffset = 12;
 
-        private FileInfo _fileInfo;
-        private FileStream _stream;
+        private readonly FileInfo _fileInfo;
+        private readonly object _syncRoot = new object();
+
+        private FileStream? _stream = null;
         private int _stride;
         private bool _midRangeReached = false;
-        private object _syncRoot = new object();
         private StreamBehavior _streamBehavior;
 
         /// <summary>
@@ -81,9 +84,17 @@ namespace WildernessLabs.TalusDB
         /// Set the value to zero (default) to disable low-water notifications
         /// </remarks>
         public int LowWaterLevel { get; set; }
+        /// <summary>
+        /// Gets a flag that indicates whether the HighWaterLevel has been exceeded
+        /// </summary>
         public bool HighWaterExceeded { get; private set; } = false;
+        /// <summary>
+        /// Gets a flag that indicates whether the LowWaterLevel has been exceeded
+        /// </summary>
         public bool LowWaterExceeded { get; private set; } = false;
-
+        /// <summary>
+        /// Gets the Table's StreamBehavior
+        /// </summary>
         public StreamBehavior StreamBehavior { get; private set; }
 
         internal Table(string rootFolder, int maxRecords)
@@ -206,14 +217,14 @@ namespace WildernessLabs.TalusDB
 
         private int Head
         {
-            get => ReadHeader(0);
-            set => WriteHeader(0, value);
+            get => ReadHeader(HeadHeaderOffset);
+            set => WriteHeader(HeadHeaderOffset, value);
         }
 
         private int Tail
         {
-            get => ReadHeader(4);
-            set => WriteHeader(4, value);
+            get => ReadHeader(TailHeaderOffset);
+            set => WriteHeader(TailHeaderOffset, value);
         }
 
         private int Stride
@@ -222,7 +233,7 @@ namespace WildernessLabs.TalusDB
             {
                 if (_stride == 0)
                 {
-                    _stride = ReadHeader(8);
+                    _stride = ReadHeader(StrideHeaderOffset);
                 }
 
                 return _stride;
@@ -231,7 +242,7 @@ namespace WildernessLabs.TalusDB
             {
                 if (_stride == 0)
                 {
-                    WriteHeader(8, value);
+                    WriteHeader(StrideHeaderOffset, value);
                 }
                 _stride = value;
             }
@@ -242,8 +253,8 @@ namespace WildernessLabs.TalusDB
         /// </summary>
         public int MaxElements
         {
-            get => ReadHeader(12);
-            private set => WriteHeader(12, value);
+            get => ReadHeader(MaxElementsHeaderOffset);
+            private set => WriteHeader(MaxElementsHeaderOffset, value);
         }
 
         private void IncrementTail()
@@ -269,6 +280,9 @@ namespace WildernessLabs.TalusDB
             }
         }
 
+        /// <summary>
+        /// Truncates (removes all data from) the Table
+        /// </summary>
         public void Truncate()
         {
             lock (_syncRoot)
@@ -288,6 +302,9 @@ namespace WildernessLabs.TalusDB
             }
         }
 
+        /// <summary>
+        /// Gets the current number of valid Elements stored in the Table
+        /// </summary>
         public int Count
         {
             get
@@ -314,7 +331,11 @@ namespace WildernessLabs.TalusDB
             }
         }
 
-        public void Insert(T item)
+        /// <summary>
+        /// Inserts an Element into the table
+        /// </summary>
+        /// <param name="element"></param>
+        public void Insert(T element)
         {
             lock (_syncRoot)
             {
@@ -332,7 +353,7 @@ namespace WildernessLabs.TalusDB
                 var stream = GetStream();
                 stream.Seek(head + HeaderSize, SeekOrigin.Begin);
 
-                var sourceItem = MemoryMarshal.CreateSpan<T>(ref item, 1);
+                var sourceItem = MemoryMarshal.CreateSpan<T>(ref element, 1);
                 var sourceBytes = MemoryMarshal.Cast<T, byte>(sourceItem);
                 stream.Write(sourceBytes);
                 FinishedWithStream(stream);
@@ -363,16 +384,16 @@ namespace WildernessLabs.TalusDB
         }
 
         /// <summary>
-        /// Removes one element from the tail of the buffer, if one exists
+        /// Removes one element from the tail of the table, if one exists
         /// </summary>
         /// <returns></returns>
-        public T? Select()
+        public T? Remove()
         {
             return GetOldest(true);
         }
 
         /// <summary>
-        /// Returns the element currently at the tail of the buffer, if one exists, without removing it
+        /// Returns the element currently at the tail of the Table, if one exists, without removing it
         /// </summary>
         /// <returns></returns>
         public T? Peek()

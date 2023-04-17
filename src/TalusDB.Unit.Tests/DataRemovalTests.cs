@@ -48,19 +48,19 @@ namespace TalusDB.Unit.Tests
             }
 
             // remove 2
-            var item0 = t.Select();
+            var item0 = t.Remove();
             Assert.False(lowWaterFired);
-            var item1 = t.Select();
+            var item1 = t.Remove();
             Assert.False(lowWaterFired);
 
             // event will fire when we reach low water
-            var item2 = t.Select();
+            var item2 = t.Remove();
             Assert.True(lowWaterFired);
             Assert.False(underrunFired);
             Assert.False(t.HasUnderrun);
 
-            var item3 = t.Select();
-            var item4 = t.Select();
+            var item3 = t.Remove();
+            var item4 = t.Remove();
 
             Assert.False(underrunFired);
             Assert.False(t.HasUnderrun);
@@ -68,7 +68,7 @@ namespace TalusDB.Unit.Tests
             // the table is now empty
             Assert.Equal(0, t.Count);
             // Select should return nothing
-            var item5 = t.Select();
+            var item5 = t.Remove();
             Assert.Null(item5);
             // and fire the underrun
             Assert.True(underrunFired);

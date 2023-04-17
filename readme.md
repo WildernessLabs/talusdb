@@ -20,7 +20,7 @@ TalusDB has an extremely simple API, consisting of a `Database` that contains `T
 
 ![](doc/database.png)
 
-The `Table` is the workhorse of the TalusDB engine.  A `Table` is a single file named for the Type of the data it stores. The `Table` file consists of a 16-byte header followed by up to `N` rows of data objects.  The file effectively acts as a Queue with a maximum size set at creation time.  `Insert` adds eleemnts to the file. Elements (records) will get stored until `MaxElements` is reached, at which point the oldest items will get overwritten.  Removing elements is done via a call to `Select` which will *remove* (i.e. dequeue) a single element from the table.
+The `Table` is the workhorse of the TalusDB engine.  A `Table` is a single file named for the Type of the data it stores. The `Table` file consists of a 16-byte header followed by up to `N` rows of data objects.  The file effectively acts as a Queue with a maximum size set at creation time.  `Insert` adds eleemnts to the file. Elements (records) will get stored until `MaxElements` is reached, at which point the oldest items will get overwritten.  Removing elements is done via a call to `Remove` which will *remove* (i.e. dequeue) a single element from the table.
 
 ![](doc/table.png)
 
@@ -44,7 +44,7 @@ Since the `Table` has a maximum number of Elements that it may store, when an ap
 
 ### Underrun
 
-Similar to the `Overrun` condition, if an application attempts to `Select()` an item from an empty `Table` an `Underrun` Event will be raised. An application can optionally have the `Table` throw an Exception in this scenario.
+Similar to the `Overrun` condition, if an application attempts to `Remove()` an item from an empty `Table` an `Underrun` Event will be raised. An application can optionally have the `Table` throw an Exception in this scenario.
 
 ## Coming Features
 

@@ -112,7 +112,7 @@ namespace TalusDB.Unit.Tests
             Assert.Equal(t.MaxElements, t.Count);
 
             // oldest should be index 1 (index 0 was overwritten)
-            var test = t.Select();
+            var test = t.Remove();
             Assert.NotNull(test);
             Assert.Equal(1, test.Value.Index);
         }
