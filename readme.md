@@ -26,6 +26,24 @@ The `Table` is the workhorse of the TalusDB engine.  A `Table` is a single file 
 
 > **Since Elements are stored in fixed-length slots, TalusDB elements must be fully blittable types**
 
+## Strings
+
+TalusDB is designed for fixed-length, blittable types.  Generally for telemetry-type data this is not a problem, however you might want to use a `string` Type which is *not* blittable.  This adds a bit of a challenge to the way TalusDB serializes and deserializes and requires some work on the application's part.
+
+In order to serialize `string`-comtaining types, the type must specifiy the string as a *Field* and it must be decorated with a defined length using a `MarshalAsAttribute`.
+
+```
+[StructLayout(LayoutKind.Sequential)]
+public struct StringTelemetry : IEquatable<StringTelemetry>
+{
+    public DateTime Timestamp;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 16)]
+    public string Name;
+}
+```
+
+Note that doing this causes the `Table` to use the older `Marshal` class with manual heap allocations instead of the newer `MemoryMarshal` class.  The impacts of this from a performance and resource perspective still need to be analyzed.
+
 ## "Advanced" Features
 
 TalusDB is not designed to provide loads of features.  Simplicity and low overhead are the core tenets of its architecture.  However there are a few niceties that it does provide to allow applications to handle specific `Table` conditions.
