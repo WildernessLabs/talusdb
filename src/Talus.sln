@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33213.308
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WildernessLabs.TalusDB", "WildernessLabs.TalusDB\WildernessLabs.TalusDB.csproj", "{8EEA535F-1D32-496C-BCE4-FB130ECE1580}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TalusDB.Unit.Tests", "TalusDB.Unit.Tests\TalusDB.Unit.Tests.csproj", "{C8FFCBD4-9D82-409B-938E-C909780DEC06}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "documentation", "documentation", "{B69178B2-99C0-4A0C-8D36-2BC56B8D77C2}"
+	ProjectSection(SolutionItems) = preProject
+		..\readme.md = ..\readme.md
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8EEA535F-1D32-496C-BCE4-FB130ECE1580}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8EEA535F-1D32-496C-BCE4-FB130ECE1580}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8EEA535F-1D32-496C-BCE4-FB130ECE1580}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8EEA535F-1D32-496C-BCE4-FB130ECE1580}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C8FFCBD4-9D82-409B-938E-C909780DEC06}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C8FFCBD4-9D82-409B-938E-C909780DEC06}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C8FFCBD4-9D82-409B-938E-C909780DEC06}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C8FFCBD4-9D82-409B-938E-C909780DEC06}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B0D2ECC2-7A69-4C2E-9D76-9EB1924772C2}
+	EndGlobalSection
+EndGlobal
