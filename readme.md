@@ -18,6 +18,8 @@ TalusDB is meant to fill a capability gap for far-edge IoT telemetry storage for
 
 TalusDB has an extremely simple API, consisting of a `Database` that contains `Tables`.  A Database is simply a directory (defaulting to `.talusdb in the application folder`) that contains `Tables`.
 
+![](doc/database.png)
+
 The `Table` is the workhorse of the TalusDB engine.  A `Table` is a single file named for the Type of the data it stores. The `Table` file consists of a 16-byte header followed by up to `N` rows of data objects.  The file effectively acts as a Queue with a maximum size set at creation time.  `Insert` adds eleemnts to the file. Elements (records) will get stored until `MaxElements` is reached, at which point the oldest items will get overwritten.  Removing elements is done via a call to `Select` which will *remove* (i.e. dequeue) a single element from the table.
 
 ![](doc/table.png)
