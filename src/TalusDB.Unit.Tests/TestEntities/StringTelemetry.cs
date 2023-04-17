@@ -1,32 +1,41 @@
-﻿using System.Text;
+﻿using System.Runtime.InteropServices;
 
 namespace TalusDB.Unit.Tests.TestEntities
 {
-    public struct StringTelemetry : IEquatable<StringTelemetry>
+    public struct InvalidStringFieldTelemetry
+    {
+        public DateTime Timestamp;
+        // note: no MarshalAs, so it's not a fixed-size
+        public string Name;
+    }
+
+    public struct InvalidStringPropertyTelemetry
     {
         public DateTime Timestamp { get; set; }
-        public byte[] NameData { get; set; }
+        public string Name { get; set; }
+    }
 
-        public StringTelemetry()
+    public struct InvalidPropertyTypeTelemetry
+    {
+        public class Foo
         {
-            Timestamp = default;
-            NameData = new byte[16];
+            public string Name { get; set; }
         }
 
-        public string Name
-        {
-            get => Encoding.UTF8.GetString(NameData, 0, NameData.Length).Trim();
-            set
-            {
-                Array.Clear(NameData);
-                var data = Encoding.UTF8.GetBytes(value);
-                Array.Copy(data, 0, NameData, 0, data.Length < 16 ? data.Length : 16);
-            }
-        }
+        public DateTime Timestamp { get; set; }
+        public Foo bar { get; set; }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct StringTelemetry : IEquatable<StringTelemetry>
+    {
+        public DateTime Timestamp;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 16)]
+        public string Name;
 
         public bool Equals(StringTelemetry other)
         {
-            if (Timestamp != other.Timestamp) return false;
+            if (Timestamp.Ticks != other.Timestamp.Ticks) return false;
             if (Name != other.Name) return false;
             return true;
         }

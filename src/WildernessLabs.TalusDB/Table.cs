@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 namespace WildernessLabs.TalusDB
 {
@@ -23,6 +25,7 @@ namespace WildernessLabs.TalusDB
         private int _stride;
         private bool _midRangeReached = false;
         private StreamBehavior _streamBehavior;
+        private bool _useMemoryMarshal = true;
 
         /// <summary>
         /// Fires when an element is added to the Table
@@ -120,6 +123,47 @@ namespace WildernessLabs.TalusDB
                 Tail = 0;
                 Stride = Marshal.SizeOf(typeof(T));
                 MaxElements = maxRecords;
+            }
+
+            try
+            {
+                T instance = (T)FormatterServices.GetUninitializedObject(typeof(T));
+                MemoryMarshal.AsBytes<T>(new T[] { instance });
+                // type is blittable
+                _useMemoryMarshal = true;
+            }
+            catch
+            {
+                // type is not blittable is it only due to string?
+                foreach (var prop in typeof(T).GetProperties())
+                {
+                    if (!prop.PropertyType.IsValueType)
+                    {
+                        throw new TalusException($"Type '{typeof(T).Name}' is not blittable due to Property '{prop.Name}'");
+                    }
+                }
+
+                foreach (var field in typeof(T).GetFields())
+                {
+                    if (!field.FieldType.IsValueType)
+                    {
+                        if (field.FieldType.Equals(typeof(string)))
+                        {
+                            if (field.GetCustomAttributes(typeof(MarshalAsAttribute), true).Any())
+                            {
+                                _useMemoryMarshal = false;
+                            }
+                            else
+                            {
+                                throw new TalusException($"Type '{typeof(T).Name}' is not blittable due to Field '{field.Name}' not using MarshalAs");
+                            }
+                        }
+                        else
+                        {
+                            throw new TalusException($"Type '{typeof(T).Name}' is not blittable due to Field '{field.Name}'");
+                        }
+                    }
+                }
             }
         }
 
@@ -353,9 +397,23 @@ namespace WildernessLabs.TalusDB
                 var stream = GetStream();
                 stream.Seek(head + HeaderSize, SeekOrigin.Begin);
 
-                var sourceItem = MemoryMarshal.CreateSpan<T>(ref element, 1);
-                var sourceBytes = MemoryMarshal.Cast<T, byte>(sourceItem);
-                stream.Write(sourceBytes);
+                if (_useMemoryMarshal)
+                {
+                    var sourceItem = MemoryMarshal.CreateSpan<T>(ref element, 1);
+                    var sourceBytes = MemoryMarshal.Cast<T, byte>(sourceItem);
+                    stream.Write(sourceBytes);
+                }
+                else
+                {
+                    var size = Marshal.SizeOf(element);
+                    var data = new byte[size];
+                    var ptr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(T)));
+                    Marshal.StructureToPtr<T>(element, ptr, false);
+                    Marshal.Copy(ptr, data, 0, size);
+                    Marshal.FreeHGlobal(ptr);
+                    stream.Write(data);
+                }
+
                 FinishedWithStream(stream);
 
                 IncrementHead();
@@ -418,7 +476,19 @@ namespace WildernessLabs.TalusDB
                 stream.Read(buffer);
                 FinishedWithStream(stream);
 
-                var sourceItem = MemoryMarshal.Cast<byte, T>(buffer);
+                T sourceItem;
+                if (_useMemoryMarshal)
+                {
+                    sourceItem = MemoryMarshal.Cast<byte, T>(buffer)[0];
+                }
+                else
+                {
+                    var size = Marshal.SizeOf(typeof(T));
+                    var ptr = Marshal.AllocHGlobal(size);
+                    Marshal.Copy(buffer.ToArray(), 0, ptr, size);
+                    sourceItem = Marshal.PtrToStructure<T>(ptr);
+                    Marshal.FreeHGlobal(ptr);
+                }
 
                 if (remove)
                 {
@@ -442,7 +512,7 @@ namespace WildernessLabs.TalusDB
                     }
                 }
 
-                return sourceItem[0];
+                return sourceItem;
             }
         }
 
