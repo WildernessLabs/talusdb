@@ -10,8 +10,8 @@ namespace WildernessLabs.TalusDB
     /// </summary>
     public class Database
     {
-        private Dictionary<Type, object> _tableCache = new Dictionary<Type, object>();
-
+        private Dictionary<Type, ITable> _tableCache = new Dictionary<Type, ITable>();
+        internal event EventHandler<ITable> TableAdded = delegate { };
         /// <summary>
         /// Gets the folder path that holds all of the TalusDB Tables
         /// </summary>
@@ -20,7 +20,7 @@ namespace WildernessLabs.TalusDB
         /// <summary>
         /// Creates a new TalusDB Database
         /// </summary>
-        /// <param name="rootFolder">Optional root folder for teh Database</param>
+        /// <param name="rootFolder">Optional root folder for the Database</param>
         /// <exception cref="DirectoryNotFoundException"></exception>
         public Database(string? rootFolder = null)
         {
@@ -78,6 +78,7 @@ namespace WildernessLabs.TalusDB
                 var table = new Table<T>(RootFolder, maxElements);
                 AddTableMeta<T>();
                 _tableCache.Add(typeof(T), table);
+                TableAdded?.Invoke(this, table);
                 return table;
             }
         }
@@ -97,7 +98,7 @@ namespace WildernessLabs.TalusDB
             lock (_tableCache)
             {
                 var existing = _tableCache.FirstOrDefault(t => t.Key.Name == tableName);
-                if (!existing.Equals(default(KeyValuePair<Type, object>)))
+                if (!existing.Equals(default(KeyValuePair<Type, ITable>)))
                 {
                     _tableCache.Remove(existing.Key);
                 }
@@ -213,9 +214,15 @@ namespace WildernessLabs.TalusDB
                 var table = Table<T>.Open(RootFolder);
 
                 _tableCache.Add(typeof(T), table);
+                TableAdded?.Invoke(this, table);
 
                 return table;
             }
+        }
+
+        internal ITable[] GetTables()
+        {
+            return _tableCache.Values.ToArray();
         }
 
         /// <summary>

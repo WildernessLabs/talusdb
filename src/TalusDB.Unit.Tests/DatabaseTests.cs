@@ -3,7 +3,6 @@ using WildernessLabs.TalusDB;
 
 namespace TalusDB.Unit.Tests
 {
-
     public class DatabaseTests : TestBase
     {
         [Fact]

@@ -10,8 +10,11 @@ namespace WildernessLabs.TalusDB
     /// A TalusDB storage file for telemetry data
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class Table<T> where T : struct
+    public class Table<T> : ITable
+        where T : struct
     {
+        internal event EventHandler PublicationStateChanged = delegate { };
+
         private const int HeaderSize = 32; // currently only 16 used - leaving space for future additions
         private const int HeadHeaderOffset = 0;
         private const int TailHeaderOffset = 4;
@@ -24,8 +27,8 @@ namespace WildernessLabs.TalusDB
         private FileStream? _stream = null;
         private int _stride;
         private bool _midRangeReached = false;
-        private StreamBehavior _streamBehavior;
         private bool _useMemoryMarshal = true;
+        private bool _publicationEnabled = false;
 
         /// <summary>
         /// Fires when an element is added to the Table
@@ -47,6 +50,7 @@ namespace WildernessLabs.TalusDB
         /// Fires when the number of elements in a table reaches a non-zero LowWaterLevel value on a Remove call.  This event fires only once when passing downward across the boundary.
         /// </summary>
         public event EventHandler LowWater = delegate { };
+
         /// <summary>
         /// When set to <b>true</b>, overrun conditions will throw a TalusException.  Default is <b>false</b>.
         /// </summary>
@@ -99,6 +103,19 @@ namespace WildernessLabs.TalusDB
         /// Gets the Table's StreamBehavior
         /// </summary>
         public StreamBehavior StreamBehavior { get; private set; }
+        /// <summary>
+        /// When true, will be published through the Database Publisher
+        /// </summary>
+        public bool PublicationEnabled
+        {
+            get => _publicationEnabled;
+            set
+            {
+                if (value == PublicationEnabled) return;
+                _publicationEnabled = value;
+                PublicationStateChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
 
         internal Table(string rootFolder, int maxRecords)
         {
