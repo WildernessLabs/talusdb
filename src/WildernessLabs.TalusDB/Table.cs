@@ -10,7 +10,7 @@ namespace WildernessLabs.TalusDB
     /// A TalusDB storage file for telemetry data
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class Table<T> : ITable
+    public class Table<T> : ITable<T>
         where T : struct
     {
         internal event EventHandler PublicationStateChanged = delegate { };
@@ -553,6 +553,11 @@ namespace WildernessLabs.TalusDB
                 throw new TalusException("Underrun");
             }
             Underrun?.Invoke(this, EventArgs.Empty);
+        }
+
+        T ITable<T>.Remove()
+        {
+            throw new NotImplementedException();
         }
     }
 }

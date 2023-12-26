@@ -65,10 +65,5 @@ namespace TalusDB.Unit.Tests
             Assert.Equal(itemsToAdd, pubCount);
 
         }
-
-        private void Pub_ItemPublished(object? sender, EventArgs e)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

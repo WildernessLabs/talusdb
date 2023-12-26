@@ -29,4 +29,10 @@ namespace WildernessLabs.TalusDB
 
         public bool PublicationEnabled { get; }
     }
+
+    public interface ITable<T> : ITable
+    {
+        void Insert(T element);
+        T? Remove();
+    }
 }

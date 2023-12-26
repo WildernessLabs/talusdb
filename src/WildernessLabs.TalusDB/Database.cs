@@ -60,7 +60,7 @@ namespace WildernessLabs.TalusDB
         }
 
         /// <summary>
-        /// Creates a TalusDB Table for the give blittable type
+        /// Creates a TalusDB Table for the given blittable type
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="maxElements"></param>
@@ -239,5 +239,54 @@ namespace WildernessLabs.TalusDB
             }
             return File.ReadAllLines(path).Select(l => l.Substring(0, l.IndexOf('|'))).ToArray();
         }
+
+        ////////////////////////////////////////////////////
+
+        public ITable<T> CreateTable2<T>(int maxBlocks) where T : new()
+        {
+            if (TableExists2<T>())
+            {
+                throw new TalusException("Table already exists");
+            }
+
+            lock (_tableCache)
+            {
+                var table = new JsonTable<T>(RootFolder, maxBlocks);
+                AddTableMeta2<T>();
+                _tableCache.Add(typeof(T), table);
+                TableAdded?.Invoke(this, table);
+                return table;
+            }
+        }
+
+        public bool TableExists2<T>()
+        {
+            lock (_tableCache)
+            {
+                if (_tableCache.ContainsKey(typeof(T)))
+                {
+                    return true;
+                }
+            }
+
+            var type = typeof(T);
+            var path = Path.Combine(RootFolder, ".meta");
+            var lines = File.ReadAllLines(path).ToList();
+            return lines.Any(l => l.StartsWith($"{type.Name}|"));
+        }
+
+        private void AddTableMeta2<T>()
+        {
+            var type = typeof(T);
+            var path = Path.Combine(RootFolder, ".meta");
+            var lines = File.ReadAllLines(path).ToList();
+            if (!lines.Any(l => l.StartsWith($"{type.Name}|")))
+            {
+                lines.Add($"{type.Name}|{type.AssemblyQualifiedName}");
+                File.Delete(path);
+                File.WriteAllLines(path, lines);
+            }
+        }
+
     }
 }
