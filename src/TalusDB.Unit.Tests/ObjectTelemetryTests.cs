@@ -144,21 +144,23 @@ namespace TalusDB.Unit.Tests
 
             Assert.Equal(0, t.Count);
 
+            var now = DateTime.Now;
+
             // insert 2 items
             var o1 = new ObjectTelemetry
             {
-                Timestamp = DateTime.Now,
-                Name = "Name 1",
+                Timestamp = now,
+                Name = "Name",
                 Description = "This is a long description. 123456789012345678901234567890123456789012345678901234567890",
                 Value = 42.42
             };
             t.Insert(o1);
             var o2 = new ObjectTelemetry
             {
-                Timestamp = DateTime.Now,
-                Name = "Name 2",
-                Description = "This is another long description. 123456789012345678901234567890123456789012345678901234567890",
-                Value = 24.24
+                Timestamp = now,
+                Name = "Name",
+                Description = "This is a long description. 123456789012345678901234567890123456789012345678901234567890",
+                Value = 42.42
             };
             t.Insert(o2);
 
@@ -171,10 +173,10 @@ namespace TalusDB.Unit.Tests
 
             var o3 = new ObjectTelemetry
             {
-                Timestamp = DateTime.Now,
-                Name = "Name 3",
-                Description = "This is another long description. 123456789012345678901234567890123456789012345678901234567890",
-                Value = 12.34
+                Timestamp = now,
+                Name = "Name",
+                Description = "This is a long description. 123456789012345678901234567890123456789012345678901234567890",
+                Value = 42.42
             };
             t.Insert(o3);
             Assert.Equal(2, t.Count);

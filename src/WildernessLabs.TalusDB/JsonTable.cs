@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -34,6 +35,7 @@ public class JsonTable<T> : ITable<T>
     private object _syncRoot = new();
 
     public bool IsFull { get; private set; }
+    public int MaxBlocks { get; }
 
     internal JsonTable(string rootFolder, int maxBlocks)
     {
@@ -52,9 +54,12 @@ public class JsonTable<T> : ITable<T>
             stream.Write(new byte[HeaderSize]);
             FinishedWithStream(stream);
             HeadPointer = 0;
-            //            TailPointer = 0;
-            //            Count = 0
-            //            MaxBlocks = maxBlocks;
+            WriteHeaderValue(MaxBlocksHeaderOffset, maxBlocks);
+            MaxBlocks = maxBlocks;
+        }
+        else
+        {
+            MaxBlocks = ReadHeaderValue(MaxBlocksHeaderOffset);
         }
     }
 
@@ -77,11 +82,27 @@ public class JsonTable<T> : ITable<T>
             var stream = GetStream();
             stream.Seek(head + HeaderSize, SeekOrigin.Begin);
 
-            stream.WriteByte(0xff);
-            stream.Write(block);
-            stream.Write(padding);
+            // are we larger than "past the end of file"?
+            var distanceToEndOfFile = (int)((MaxBlocks * BlockSize) - stream.Position);
+            if (distanceToEndOfFile < block.Length)
+            {
+                stream.WriteByte(0xff);
+                var initialWrite = distanceToEndOfFile - 1;
+                stream.Write(block, 0, initialWrite);
 
+                stream.Seek(HeaderSize, SeekOrigin.Begin);
+                stream.Write(block, initialWrite, block.Length - initialWrite);
+
+            }
+            else
+            {
+                stream.WriteByte(0xff);
+                stream.Write(block);
+                stream.Write(padding);
+            }
             FinishedWithStream(stream);
+
+            // TODO: did we write "past the tail" (overwrite)?
 
             Count++;
             IncrementHead(blocksRequired);
@@ -119,13 +140,21 @@ public class JsonTable<T> : ITable<T>
     private int HeadPointer
     {
         get => ReadHeaderValue(HeadHeaderOffset);
-        set => WriteHeaderValue(HeadHeaderOffset, value);
+        set
+        {
+            Debug.WriteLine($"HEAD at {value} (block {value / BlockSize})");
+            WriteHeaderValue(HeadHeaderOffset, value);
+        }
     }
 
     private int TailPointer
     {
         get => ReadHeaderValue(TailHeaderOffset);
-        set => WriteHeaderValue(TailHeaderOffset, value);
+        set
+        {
+            Debug.WriteLine($"TAIL at {value} (block {value / BlockSize})");
+            WriteHeaderValue(TailHeaderOffset, value);
+        }
     }
 
     private int ReadHeaderValue(int offset)
@@ -184,7 +213,17 @@ public class JsonTable<T> : ITable<T>
     {
         lock (_syncRoot)
         {
-            HeadPointer += (blocks * BlockSize);
+            var currentHead = HeadPointer;
+            var newHeadPointer = currentHead + (blocks * BlockSize);
+            var maxPointerValue = MaxBlocks * BlockSize + HeaderSize;
+            if (newHeadPointer > maxPointerValue)
+            {
+                HeadPointer = HeaderSize + newHeadPointer - maxPointerValue;
+            }
+            else
+            {
+                HeadPointer = newHeadPointer;
+            }
         }
     }
 
@@ -225,17 +264,21 @@ public class JsonTable<T> : ITable<T>
 
             // we're always at least 1 block, so skip to the second
             stream.Seek(blockStart + BlockSize, SeekOrigin.Begin);
+
             // find the next block start = skip by block until we find the start of the next record
             var blocks = 1;
             var b = stream.ReadByte(); // this is the block start indicator
-            while (b != 0xff)
+            var blockWrap = -1;
+
+            while (b != 0xff && b != 0x00) // look for either start of next valid (0xff) or invalid (0x00) record
             {
                 stream.Position += BlockSize - 1; // -1 because we read 1 for the marker
 
                 // are we past the end of the stream?
-                if (stream.Position > stream.Length)
+                if (stream.Position >= stream.Length)
                 {
                     stream.Position = HeaderSize;
+                    blockWrap = blocks + 1;
                 }
 
                 // have we passed the tail?
@@ -248,11 +291,27 @@ public class JsonTable<T> : ITable<T>
                 blocks++;
             }
 
-            Span<byte> buffer = stackalloc byte[(blocks * BlockSize) - 1];
+            var buffer = new byte[(blocks * BlockSize) - 1];
+            //Span<byte> buffer = stackalloc byte[(blocks * BlockSize) - 1];
             stream.Seek(blockStart + 1, SeekOrigin.Begin);
-            stream.Read(buffer);
+
+            if (blockWrap < 0)
+            {
+                // contiguous record
+                stream.Read(buffer);
+            }
+            else
+            {
+                // we wrapped past end of file during the read
+                var endBytes = blockWrap * BlockSize - 1;
+                var read = stream.Read(buffer, 0, endBytes);
+                stream.Seek(HeaderSize, SeekOrigin.Begin);
+                stream.Read(buffer, read, buffer.Length - read);
+            }
+
             tail = stream.Position;
             stream.Seek(blockStart, SeekOrigin.Begin);
+
             if (remove)
             {
                 stream.WriteByte(0x00); // invalidate start marker
@@ -265,7 +324,7 @@ public class JsonTable<T> : ITable<T>
             if (remove)
             {
 
-                TailPointer = (int)tail;
+                TailPointer = (int)(tail - HeaderSize);
                 Count--;
                 IsFull = false;
 

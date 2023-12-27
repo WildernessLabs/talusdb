@@ -1,6 +1,6 @@
 ﻿namespace TalusDB.Unit.Tests.TestEntities
 {
-    public class ObjectTelemetry
+    public class ObjectTelemetry : IEquatable<ObjectTelemetry>
     {
         public DateTime Timestamp { get; set; }
         public string Name { get; set; }
