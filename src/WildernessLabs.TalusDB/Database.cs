@@ -10,7 +10,9 @@ namespace WildernessLabs.TalusDB
     /// </summary>
     public class Database
     {
-        private Dictionary<Type, ITable> _tableCache = new Dictionary<Type, ITable>();
+        private readonly Dictionary<Type, ITable> _tableCache = new Dictionary<Type, ITable>();
+        private readonly StreamBehavior _streamBehavior;
+
         internal event EventHandler<ITable> TableAdded = delegate { };
         /// <summary>
         /// Gets the folder path that holds all of the TalusDB Tables
@@ -21,8 +23,9 @@ namespace WildernessLabs.TalusDB
         /// Creates a new TalusDB Database
         /// </summary>
         /// <param name="rootFolder">Optional root folder for the Database</param>
+        /// <param name="streamBehavior">The stream behavior to use for Tables.  KeepOpen is much faster, but prone to data loss on unexpected application stoppage</param>
         /// <exception cref="DirectoryNotFoundException"></exception>
-        public Database(string? rootFolder = null)
+        public Database(string? rootFolder = null, StreamBehavior streamBehavior = StreamBehavior.KeepOpen)
         {
             if (rootFolder == null)
             {
@@ -35,6 +38,8 @@ namespace WildernessLabs.TalusDB
                     throw new DirectoryNotFoundException(rootFolder);
                 }
             }
+
+            _streamBehavior = streamBehavior;
 
             var di = new DirectoryInfo(Path.Combine(rootFolder, ".talusdb"));
 
@@ -75,7 +80,8 @@ namespace WildernessLabs.TalusDB
 
             lock (_tableCache)
             {
-                var table = new Table<T>(RootFolder, maxElements);
+                var table = new Table<T>(RootFolder, maxElements, _streamBehavior);
+
                 AddTableMeta<T>();
                 _tableCache.Add(typeof(T), table);
                 TableAdded?.Invoke(this, table);
@@ -102,6 +108,7 @@ namespace WildernessLabs.TalusDB
                 {
                     _tableCache.Remove(existing.Key);
                 }
+                (existing.Value as IDisposable)?.Dispose();
             }
 
             var path = Path.Combine(RootFolder, ".meta");

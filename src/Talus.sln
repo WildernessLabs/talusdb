@@ -9,8 +9,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TalusDB.Unit.Tests", "Talus
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "documentation", "documentation", "{B69178B2-99C0-4A0C-8D36-2BC56B8D77C2}"
 	ProjectSection(SolutionItems) = preProject
+		..\doc\benchmark.md = ..\doc\benchmark.md
+		..\doc\performance.md = ..\doc\performance.md
 		..\readme.md = ..\readme.md
+		..\doc\strings.md = ..\doc\strings.md
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TalusDB.Benchmark", "TalusDB.Benchmark\TalusDB.Benchmark.csproj", "{10D8FF5D-E35A-4F5F-BBD3-CA02119A9139}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,6 +31,10 @@ Global
 		{C8FFCBD4-9D82-409B-938E-C909780DEC06}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C8FFCBD4-9D82-409B-938E-C909780DEC06}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C8FFCBD4-9D82-409B-938E-C909780DEC06}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10D8FF5D-E35A-4F5F-BBD3-CA02119A9139}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10D8FF5D-E35A-4F5F-BBD3-CA02119A9139}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10D8FF5D-E35A-4F5F-BBD3-CA02119A9139}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10D8FF5D-E35A-4F5F-BBD3-CA02119A9139}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

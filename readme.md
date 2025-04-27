@@ -1,4 +1,7 @@
-# Wilderness Labs TalusDB Time Series IoT Database
+<h1 style="display: flex; align-items: center;">
+  <img src="doc/icon.jpg" width="200"/>
+  <span style="margin-left: 15px;">TalusDB: A Time Series IoT Database</span>
+</h1>
 
 TalusDB is meant to fill a capability gap for far-edge IoT telemetry storage for .NET developers.  Far-edge solutions are often deployed on devices with low performance and low storage capacity.  Network connectivity is often degraded or even denied.  As developers we want to be able to store time-series telemetry data but not have to be concerned with the amount of memory we're consuming or worry about filling the disk if we don't get a network connection for a month.  TalusDB solves this by providing a file-based data storage mechanism designed specifically for edge device store-and-forward applications.
 
@@ -30,7 +33,9 @@ The `Table` is the workhorse of the TalusDB engine.  A `Table` is a single file 
 
 TalusDB is designed for fixed-length, blittable types.  Generally for telemetry-type data this is not a problem, however you might want to use a `string` Type which is *not* blittable.  This adds a bit of a challenge to the way TalusDB serializes and deserializes and requires some work on the application's part.
 
-In order to serialize `string`-comtaining types, the type must specifiy the string as a *Field* and it must be decorated with a defined length using a `MarshalAsAttribute`.
+In order to serialize `string`-containing types, the type must specifiy the string as a *Field* and it must be decorated with a defined length using a `MarshalAsAttribute`.
+
+More information on how Strings are handled, and [best practices are available here](./doc/strings.md).
 
 ```
 [StructLayout(LayoutKind.Sequential)]

@@ -10,7 +10,7 @@ namespace WildernessLabs.TalusDB
     /// A TalusDB storage file for telemetry data
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class Table<T> : ITable<T>
+    public class Table<T> : ITable<T>, IDisposable
         where T : struct
     {
         internal event EventHandler PublicationStateChanged = delegate { };
@@ -27,8 +27,10 @@ namespace WildernessLabs.TalusDB
         private FileStream? _stream = null;
         private int _stride;
         private bool _midRangeReached = false;
-        private bool _useMemoryMarshal = true;
+        private readonly bool _useMemoryMarshal = true;
         private bool _publicationEnabled = false;
+        private bool _containsMarshaledStrings = false;
+        private int _totalFixedStringSize = 0;
 
         /// <summary>
         /// Fires when an element is added to the Table
@@ -104,6 +106,11 @@ namespace WildernessLabs.TalusDB
         /// </summary>
         public StreamBehavior StreamBehavior { get; private set; }
         /// <summary>
+        /// Gets the Table's Disposed state
+        /// </summary>
+        public bool IsDisposed { get; private set; }
+
+        /// <summary>
         /// When true, will be published through the Database Publisher
         /// </summary>
         public bool PublicationEnabled
@@ -117,12 +124,11 @@ namespace WildernessLabs.TalusDB
             }
         }
 
-        internal Table(string rootFolder, int maxRecords)
+        internal Table(string rootFolder, int maxRecords, StreamBehavior streamBehavior = StreamBehavior.KeepOpen)
         {
             // each table is a file in the database folder
 
-            // TODO: add ability to change this
-            StreamBehavior = StreamBehavior.AlwaysNew;
+            StreamBehavior = streamBehavior;
 
             _fileInfo = new FileInfo(Path.Combine(rootFolder, typeof(T).Name));
 
@@ -141,45 +147,86 @@ namespace WildernessLabs.TalusDB
                 Stride = Marshal.SizeOf(typeof(T));
                 MaxElements = maxRecords;
             }
-
-            try
+            else
             {
-                T instance = (T)FormatterServices.GetUninitializedObject(typeof(T));
-                MemoryMarshal.AsBytes<T>(new T[] { instance });
-                // type is blittable
-                _useMemoryMarshal = true;
+                // Read the existing values
+                Stride = ReadHeader(StrideHeaderOffset);
+                MaxElements = ReadHeader(MaxElementsHeaderOffset);
+                // Head and Tail are read when needed via properties
             }
-            catch
-            {
-                // type is not blittable is it only due to string?
-                foreach (var prop in typeof(T).GetProperties())
-                {
-                    if (!prop.PropertyType.IsValueType)
-                    {
-                        throw new TalusException($"Type '{typeof(T).Name}' is not blittable due to Property '{prop.Name}'");
-                    }
-                }
 
-                foreach (var field in typeof(T).GetFields())
+            // Check for strings first
+            CheckForMarshaledStrings();
+
+            // Only try memory marshaling if no strings were found
+            if (!_containsMarshaledStrings)
+            {
+                try
                 {
-                    if (!field.FieldType.IsValueType)
+                    T instance = (T)FormatterServices.GetUninitializedObject(typeof(T));
+                    MemoryMarshal.AsBytes<T>(new T[] { instance });
+                    // type is blittable
+                    _useMemoryMarshal = true;
+                }
+                catch
+                {
+                    _useMemoryMarshal = false;
+                }
+            }
+            else
+            {
+                // If we have marshaled strings, we must use the Marshal approach
+                _useMemoryMarshal = false;
+            }
+        }
+
+        private void CheckForMarshaledStrings()
+        {
+            // Check properties
+            foreach (var prop in typeof(T).GetProperties())
+            {
+                if (!prop.PropertyType.IsValueType)
+                {
+                    throw new TalusException($"Type '{typeof(T).Name}' is not blittable due to Property '{prop.Name}'");
+                }
+            }
+
+            // Check fields
+            foreach (var field in typeof(T).GetFields())
+            {
+                if (!field.FieldType.IsValueType)
+                {
+                    if (field.FieldType.Equals(typeof(string)))
                     {
-                        if (field.FieldType.Equals(typeof(string)))
+                        var marshalAttrs = field.GetCustomAttributes(typeof(MarshalAsAttribute), true);
+                        if (marshalAttrs.Any())
                         {
-                            if (field.GetCustomAttributes(typeof(MarshalAsAttribute), true).Any())
+                            _containsMarshaledStrings = true;
+                            var marshalAttr = (MarshalAsAttribute)marshalAttrs.First();
+                            if (marshalAttr.Value == UnmanagedType.ByValTStr)
                             {
-                                _useMemoryMarshal = false;
-                            }
-                            else
-                            {
-                                throw new TalusException($"Type '{typeof(T).Name}' is not blittable due to Field '{field.Name}' not using MarshalAs");
+                                _totalFixedStringSize += marshalAttr.SizeConst;
                             }
                         }
                         else
                         {
-                            throw new TalusException($"Type '{typeof(T).Name}' is not blittable due to Field '{field.Name}'");
+                            throw new TalusException($"Type '{typeof(T).Name}' is not blittable due to Field '{field.Name}' not using MarshalAs");
                         }
                     }
+                    else
+                    {
+                        throw new TalusException($"Type '{typeof(T).Name}' is not blittable due to Field '{field.Name}'");
+                    }
+                }
+            }
+
+            if (_containsMarshaledStrings)
+            {
+                // Ensure the stride is at least as large as needed for the fixed strings
+                int minimumStride = Marshal.SizeOf(typeof(T));
+                if (Stride < minimumStride)
+                {
+                    Stride = minimumStride;
                 }
             }
         }
@@ -320,21 +367,26 @@ namespace WildernessLabs.TalusDB
 
         private void IncrementTail()
         {
-            Tail += Stride;
-            if (Tail >= (MaxElements * Stride))
+            var newTail = Tail + Stride;
+            // If we've reached the end of the buffer, wrap around to HeaderSize
+            if (newTail >= (HeaderSize + MaxElements * Stride))
             {
-                Tail = HeaderSize;
+                newTail = HeaderSize;
             }
+            Tail = newTail;
         }
 
         private void IncrementHead()
         {
-            Head += Stride;
-            if (Head >= (MaxElements * Stride))
+            var newHead = Head + Stride;
+            // If we've reached the end of the buffer, wrap around to 0
+            if (newHead >= (HeaderSize + MaxElements * Stride))
             {
-                Head = 0;
+                newHead = HeaderSize;
             }
+            Head = newHead;
 
+            // If head catches up to tail, buffer is full
             if (Head == Tail)
             {
                 IsFull = true;
@@ -349,11 +401,15 @@ namespace WildernessLabs.TalusDB
             lock (_syncRoot)
             {
                 var stream = GetStream();
+                // Just reset to header size to clear all data
                 stream.SetLength(HeaderSize);
                 FinishedWithStream(stream);
-                Head = 0;
-                Tail = 0;
 
+                // Reset pointers
+                Head = HeaderSize;
+                Tail = HeaderSize;
+
+                // Reset state flags
                 HighWaterExceeded = false;
                 LowWaterExceeded = true;
                 _midRangeReached = false;
@@ -374,20 +430,23 @@ namespace WildernessLabs.TalusDB
                 {
                     if (IsFull) return MaxElements;
 
-                    if (Head == Tail) return 0;
+                    var head = Head;
+                    var tail = Tail;
 
-                    // special case for head at the "end" (which is also the beginning)
-                    if (Head == 0)
+                    if (head == tail) return 0;
+
+                    // Calculate element count based on head and tail positions
+                    if (head > tail)
                     {
-                        return MaxElements - (Tail / Stride);
+                        return (head - tail) / Stride;
                     }
-
-                    if (Head > Tail)
+                    else
                     {
-                        return (Head - Tail) / Stride;
+                        // Head has wrapped around
+                        var endSize = (HeaderSize + MaxElements * Stride) - tail;
+                        var startSize = head - HeaderSize;
+                        return (endSize + startSize) / Stride;
                     }
-
-                    return MaxElements - ((Tail + Head) / Stride);
                 }
             }
         }
@@ -400,6 +459,13 @@ namespace WildernessLabs.TalusDB
         {
             lock (_syncRoot)
             {
+                // Initialize head and tail if they're at zero (new table)
+                if (Head == 0 && Tail == 0)
+                {
+                    Head = HeaderSize;
+                    Tail = HeaderSize;
+                }
+
                 if (IsFull)
                 {
                     // drop the tail item
@@ -412,23 +478,44 @@ namespace WildernessLabs.TalusDB
                 // put the new item in the list
                 var head = Head;
                 var stream = GetStream();
-                stream.Seek(head + HeaderSize, SeekOrigin.Begin);
+                stream.Seek(head, SeekOrigin.Begin);
 
-                if (_useMemoryMarshal)
+                try
                 {
-                    var sourceItem = MemoryMarshal.CreateSpan<T>(ref element, 1);
-                    var sourceBytes = MemoryMarshal.Cast<T, byte>(sourceItem);
-                    stream.Write(sourceBytes);
+                    if (_useMemoryMarshal && !_containsMarshaledStrings)
+                    {
+                        var sourceItem = MemoryMarshal.CreateSpan<T>(ref element, 1);
+                        var sourceBytes = MemoryMarshal.Cast<T, byte>(sourceItem);
+                        stream.Write(sourceBytes);
+                    }
+                    else
+                    {
+                        var size = Marshal.SizeOf(element);
+                        var data = new byte[size];
+
+                        // Create unmanaged memory
+                        var ptr = Marshal.AllocHGlobal(size);
+                        try
+                        {
+                            // Copy the struct to unmanaged memory
+                            Marshal.StructureToPtr(element, ptr, false);
+
+                            // Copy the unmanaged memory to our byte array
+                            Marshal.Copy(ptr, data, 0, size);
+
+                            // Write the data to the stream
+                            stream.Write(data);
+                        }
+                        finally
+                        {
+                            // Always free the unmanaged memory
+                            Marshal.FreeHGlobal(ptr);
+                        }
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    var size = Marshal.SizeOf(element);
-                    var data = new byte[size];
-                    var ptr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(T)));
-                    Marshal.StructureToPtr<T>(element, ptr, false);
-                    Marshal.Copy(ptr, data, 0, size);
-                    Marshal.FreeHGlobal(ptr);
-                    stream.Write(data);
+                    throw new TalusException($"Error inserting element: {ex.Message}");
                 }
 
                 FinishedWithStream(stream);
@@ -488,23 +575,50 @@ namespace WildernessLabs.TalusDB
 
                 var tail = Tail;
                 var stream = GetStream();
-                stream.Seek(tail + HeaderSize, SeekOrigin.Begin);
+                stream.Seek(tail, SeekOrigin.Begin);
+
+                // Read the exact stride size
                 Span<byte> buffer = stackalloc byte[Stride];
-                stream.Read(buffer);
+                var bytesRead = stream.Read(buffer);
                 FinishedWithStream(stream);
 
-                T sourceItem;
-                if (_useMemoryMarshal)
+                // Verify we read something
+                if (bytesRead == 0)
                 {
-                    sourceItem = MemoryMarshal.Cast<byte, T>(buffer)[0];
+                    throw new TalusException("Read 0 bytes when retrieving element");
                 }
-                else
+
+                T sourceItem;
+                try
                 {
-                    var size = Marshal.SizeOf(typeof(T));
-                    var ptr = Marshal.AllocHGlobal(size);
-                    Marshal.Copy(buffer.ToArray(), 0, ptr, size);
-                    sourceItem = Marshal.PtrToStructure<T>(ptr);
-                    Marshal.FreeHGlobal(ptr);
+                    if (_useMemoryMarshal && !_containsMarshaledStrings)
+                    {
+                        sourceItem = MemoryMarshal.Cast<byte, T>(buffer)[0];
+                    }
+                    else
+                    {
+                        var size = Marshal.SizeOf(typeof(T));
+
+                        // Allocate unmanaged memory
+                        var ptr = Marshal.AllocHGlobal(size);
+                        try
+                        {
+                            // Copy from our byte array to unmanaged memory
+                            Marshal.Copy(buffer.ToArray(), 0, ptr, size);
+
+                            // Convert the unmanaged memory to our struct
+                            sourceItem = Marshal.PtrToStructure<T>(ptr);
+                        }
+                        finally
+                        {
+                            // Always free the unmanaged memory
+                            Marshal.FreeHGlobal(ptr);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new TalusException($"Error reading element: {ex.Message}");
                 }
 
                 if (remove)
@@ -557,7 +671,33 @@ namespace WildernessLabs.TalusDB
 
         T ITable<T>.Remove()
         {
-            throw new NotImplementedException();
+            var result = Remove();
+            if (!result.HasValue)
+            {
+                throw new TalusException("Cannot remove from empty table");
+            }
+            return result.Value;
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!IsDisposed)
+            {
+                if (disposing)
+                {
+                    _stream?.Close();
+                    _stream?.Dispose();
+                }
+
+                IsDisposed = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

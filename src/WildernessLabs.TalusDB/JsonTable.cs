@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Meadow.Foundation.Serialization;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.Json;
 
 namespace WildernessLabs.TalusDB;
 
@@ -71,7 +71,7 @@ public class JsonTable<T> : ITable<T>
 
     public void Insert(T element)
     {
-        var blockString = JsonSerializer.Serialize(element);
+        var blockString = MicroJson.Serialize(element);
         var block = Encoding.UTF8.GetBytes(blockString);
         var padding = new byte[BlockSize - ((block.Length + 1) % BlockSize)];
         var blocksRequired = (block.Length + padding.Length + 1) / BlockSize;
@@ -319,7 +319,7 @@ public class JsonTable<T> : ITable<T>
             FinishedWithStream(stream);
 
             var serialized = Encoding.UTF8.GetString(buffer).TrimEnd('\0');
-            var item = JsonSerializer.Deserialize<T>(serialized);
+            var item = MicroJson.Deserialize<T>(serialized);
 
             if (remove)
             {

@@ -1,21 +1,25 @@
-﻿namespace TalusDB.Unit.Tests.TestEntities
+﻿namespace TalusDB.Unit.Tests.TestEntities;
+
+public class ObjectTelemetry
 {
-    public class ObjectTelemetry : IEquatable<ObjectTelemetry>
+    public DateTime Timestamp { get; set; }
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public double Value { get; set; }
+
+    public override bool Equals(object obj)
     {
-        public DateTime Timestamp { get; set; }
-        public string Name { get; set; }
-        public string Description { get; set; }
-        public double Value { get; set; }
-
-        public bool Equals(ObjectTelemetry other)
+        if (obj is ObjectTelemetry other)
         {
-            if (other == null) return false;
-
-            if (Timestamp.Ticks != other?.Timestamp.Ticks) return false;
-            if (Name != other?.Name) return false;
-            if (Description != other?.Description) return false;
-            if (Value != other?.Value) return false;
-            return true;
+            return Name == other.Name &&
+                   Description == other.Description &&
+                   Value == other.Value;
         }
+        return false;
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Timestamp, Name, Description, Value);
     }
 }

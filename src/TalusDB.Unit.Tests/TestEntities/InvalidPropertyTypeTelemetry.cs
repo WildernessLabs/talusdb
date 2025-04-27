@@ -1,13 +1,8 @@
-﻿namespace TalusDB.Unit.Tests.TestEntities
-{
-    public struct InvalidPropertyTypeTelemetry
-    {
-        public class Foo
-        {
-            public string Name { get; set; }
-        }
+﻿namespace TalusDB.Unit.Tests.TestEntities;
 
-        public DateTime Timestamp { get; set; }
-        public Foo bar { get; set; }
-    }
+// Struct with a string property (which is not valid)
+public struct InvalidPropertyTypeTelemetry
+{
+    public DateTime Timestamp { get; set; }
+    public string Name { get; set; }
 }
