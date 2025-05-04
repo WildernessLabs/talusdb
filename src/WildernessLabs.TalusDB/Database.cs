@@ -51,6 +51,17 @@ public class Database
         RootFolder = di.FullName;
     }
 
+    /// <summary>
+    /// Closes all tables in the database
+    /// </summary>
+    public void CloseAllTables()
+    {
+        foreach (var table in _tableCache.Values)
+        {
+            table.Close();
+        }
+    }
+
     private void AddTableMeta<T>() where T : struct
     {
         var type = typeof(T);
@@ -136,6 +147,7 @@ public class Database
         {
             if (_tableCache.ContainsKey(typeof(T)))
             {
+                _tableCache[typeof(T)].Close();
                 _tableCache.Remove(typeof(T));
             }
         }

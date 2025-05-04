@@ -8,7 +8,7 @@ public class StringElementTests : TestBase
     [Fact]
     public void NonBlittablePropertyType()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
 
         // clean house - unknown start state so don't test results
         DropAllTables(db);
@@ -22,7 +22,7 @@ public class StringElementTests : TestBase
     [Fact]
     public void InvalidStringProperty()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
 
         // clean house - unknown start state so don't test results
         DropAllTables(db);
@@ -36,7 +36,7 @@ public class StringElementTests : TestBase
     [Fact]
     public void InvalidStringField()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
 
         // clean house - unknown start state so don't test results
         DropAllTables(db);
@@ -50,7 +50,7 @@ public class StringElementTests : TestBase
     [Fact]
     public void AddStringItem()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
 
         // clean house - unknown start state so don't test results
         DropAllTables(db);
@@ -81,7 +81,7 @@ public class StringElementTests : TestBase
     [Fact]
     public void MixedItemTest()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
 
         // clean house - unknown start state so don't test results
         DropAllTables(db);

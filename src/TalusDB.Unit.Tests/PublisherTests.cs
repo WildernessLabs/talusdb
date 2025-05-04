@@ -33,7 +33,7 @@ public class PublisherTests : TestBase
     [Fact]
     public void CreateAndDropTableTests()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
 
         var pubCount = 0;
 

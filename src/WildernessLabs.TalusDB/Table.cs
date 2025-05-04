@@ -124,6 +124,14 @@ namespace WildernessLabs.TalusDB
             }
         }
 
+        /// <summary>
+        /// Closes any open streams associated with this table
+        /// </summary>
+        public void Close()
+        {
+            _stream?.Close();
+        }
+
         internal Table(string rootFolder, int maxRecords, StreamBehavior streamBehavior = StreamBehavior.KeepOpen)
         {
             // each table is a file in the database folder

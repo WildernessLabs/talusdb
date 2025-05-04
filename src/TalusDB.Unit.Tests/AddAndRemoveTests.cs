@@ -1,5 +1,4 @@
 using TalusDB.Unit.Tests.TestEntities;
-using WildernessLabs.TalusDB;
 
 namespace TalusDB.Unit.Tests
 {
@@ -8,7 +7,7 @@ namespace TalusDB.Unit.Tests
         [Fact]
         public void AddAndRemoveOne()
         {
-            var db = new Database();
+            var db = DatabaseFactory.GetDatabase();
 
             // clean house - unknown start state so don't test results
             DropAllTables(db);
@@ -35,7 +34,7 @@ namespace TalusDB.Unit.Tests
         [Fact]
         public void AddAndRemoveTwo()
         {
-            var db = new Database();
+            var db = DatabaseFactory.GetDatabase();
 
             // clean house - unknown start state so don't test results
             DropAllTables(db);

@@ -3,12 +3,24 @@ using WildernessLabs.TalusDB;
 
 namespace TalusDB.Unit.Tests;
 
+public static class DatabaseFactory
+{
+    public static Database GetDatabase()
+    {
+        // gnerate using a random name to prevent test collisions on the same files
+        string currentDirectory = Environment.CurrentDirectory;
+        var testDirectory = Path.Combine(currentDirectory, Path.GetRandomFileName());
+        Directory.CreateDirectory(testDirectory);
+        return new Database(testDirectory);
+    }
+}
+
 public class DatabaseTests : TestBase
 {
     [Fact]
     public void CreateAndDropTableTests()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
 
         // clean house - unknown start state so don't test results
         DropAllTables(db);

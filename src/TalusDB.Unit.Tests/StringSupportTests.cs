@@ -8,7 +8,7 @@ public class StringSupportTests : TestBase
     [Fact]
     public void StringLengthTest()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
         DropAllTables(db);
 
         var t = db.CreateTable<StringTelemetry>(10);
@@ -31,7 +31,7 @@ public class StringSupportTests : TestBase
     [Fact]
     public void StringTruncationTest()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
         DropAllTables(db);
 
         var t = db.CreateTable<StringTelemetry>(10);
@@ -55,7 +55,7 @@ public class StringSupportTests : TestBase
     [Fact]
     public void EmptyStringTest()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
         DropAllTables(db);
 
         var t = db.CreateTable<StringTelemetry>(10);
@@ -77,7 +77,7 @@ public class StringSupportTests : TestBase
     [Fact]
     public void NullStringTest()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
         DropAllTables(db);
 
         var t = db.CreateTable<StringTelemetry>(10);
@@ -100,7 +100,7 @@ public class StringSupportTests : TestBase
     [Fact]
     public void MultipleStringFieldsTest()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
         DropAllTables(db);
 
         var t = db.CreateTable<MultiStringTelemetry>(10);
@@ -125,7 +125,7 @@ public class StringSupportTests : TestBase
     [Fact]
     public void SpecialCharactersTest()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
         DropAllTables(db);
 
         var t = db.CreateTable<StringTelemetry>(10);
@@ -148,7 +148,7 @@ public class StringSupportTests : TestBase
     [Fact]
     public void MaxCapacityTest()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
         DropAllTables(db);
 
         // Create table with small max elements
@@ -186,7 +186,7 @@ public class StringSupportTests : TestBase
     [Fact]
     public void MixedDataTypesTest()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
         DropAllTables(db);
 
         var t = db.CreateTable<MixedDataTelemetry>(10);

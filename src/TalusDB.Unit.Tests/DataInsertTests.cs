@@ -8,7 +8,7 @@ namespace TalusDB.Unit.Tests
         [Fact]
         public void AddOne()
         {
-            var db = new Database();
+            var db = DatabaseFactory.GetDatabase();
 
             // clean house - unknown start state so don't test results
             DropAllTables(db);
@@ -32,7 +32,7 @@ namespace TalusDB.Unit.Tests
         [Fact]
         public void FillTableTest()
         {
-            var db = new Database();
+            var db = DatabaseFactory.GetDatabase();
 
             // clean house - unknown start state so don't test results
             DropAllTables(db);
@@ -61,7 +61,7 @@ namespace TalusDB.Unit.Tests
         [Fact]
         public void OverrunTest()
         {
-            var db = new Database();
+            var db = DatabaseFactory.GetDatabase();
 
             // clean house - unknown start state so don't test results
             DropAllTables(db);
@@ -120,7 +120,7 @@ namespace TalusDB.Unit.Tests
         [Fact]
         public void HighWaterTest()
         {
-            var db = new Database();
+            var db = DatabaseFactory.GetDatabase();
 
             // clean house - unknown start state so don't test results
             DropAllTables(db);

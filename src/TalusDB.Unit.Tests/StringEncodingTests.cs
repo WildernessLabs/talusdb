@@ -32,7 +32,7 @@ public class StringEncodingTests : TestBase
     [Fact]
     public void BasicEncodingTest()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
         DropAllTables(db);
 
         var t = db.CreateTable<EncodingTestTelemetry>(10);
@@ -54,7 +54,7 @@ public class StringEncodingTests : TestBase
     [Fact]
     public void ExtendedLatinCharactersTest()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
         DropAllTables(db);
 
         var t = db.CreateTable<EncodingTestTelemetry>(10);
@@ -77,7 +77,7 @@ public class StringEncodingTests : TestBase
     [Fact]
     public void LongStringTest()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
         DropAllTables(db);
 
         var t = db.CreateTable<EncodingTestTelemetry>(10);

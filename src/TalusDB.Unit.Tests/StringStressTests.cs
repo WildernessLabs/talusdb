@@ -41,7 +41,7 @@ public class StringStressTests : TestBase
     [Fact]
     public void BoundaryLengthTest()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
         DropAllTables(db);
 
         var t = db.CreateTable<StressTestTelemetry>(10);
@@ -79,7 +79,7 @@ public class StringStressTests : TestBase
     [Fact]
     public void RapidInsertRemoveTest()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
         DropAllTables(db);
 
         var t = db.CreateTable<StressTestTelemetry>(100);
@@ -104,7 +104,7 @@ public class StringStressTests : TestBase
     [Fact]
     public void CircularBufferOverwriteTest()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
         DropAllTables(db);
 
         var tableSize = 10;
@@ -139,7 +139,7 @@ public class StringStressTests : TestBase
     [Fact]
     public void RandomStringTest()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
         DropAllTables(db);
 
         var t = db.CreateTable<StressTestTelemetry>(100);
@@ -185,7 +185,7 @@ public class StringStressTests : TestBase
     [Fact]
     public void ControlCharactersTest()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
         DropAllTables(db);
 
         var t = db.CreateTable<StressTestTelemetry>(10);
@@ -211,7 +211,7 @@ public class StringStressTests : TestBase
     [Fact]
     public void MultiThreadedAccess()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
         DropAllTables(db);
 
         var t = db.CreateTable<StressTestTelemetry>(1000);
@@ -261,7 +261,7 @@ public class StringStressTests : TestBase
     [Fact]
     public void VaryingLengthStringsTest()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
         DropAllTables(db);
 
         var t = db.CreateTable<StressTestTelemetry>(100);
@@ -293,7 +293,8 @@ public class StringStressTests : TestBase
     [Fact]
     public void TableReOpenTest()
     {
-        var db = new Database();
+        var db = DatabaseFactory.GetDatabase();
+
         DropAllTables(db);
 
         // Create a table and add some data
@@ -312,7 +313,9 @@ public class StringStressTests : TestBase
 
         // "Reopen" the database and verify data persists
         {
-            var newDb = new Database();
+            db.CloseAllTables();
+
+            var newDb = new Database(Path.GetDirectoryName(db.RootFolder));
             var t = newDb.GetTable<StressTestTelemetry>();
 
             Assert.Equal(1, t.Count);
