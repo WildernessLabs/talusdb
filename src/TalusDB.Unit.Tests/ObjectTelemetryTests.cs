@@ -13,7 +13,7 @@ namespace TalusDB.Unit.Tests
             // clean house - unknown start state so don't test results
             DropAllTables(db);
 
-            var t = db.CreateTable2<ObjectTelemetry>(100);
+            var t = db.CreateTable<ObjectTelemetry>(100);
 
             //t.Truncate();
 
@@ -55,7 +55,7 @@ namespace TalusDB.Unit.Tests
             // clean house - unknown start state so don't test results
             DropAllTables(db);
 
-            var t = db.CreateTable2<ObjectTelemetry>(100);
+            var t = db.CreateTable<ObjectTelemetry>(100);
 
             //t.Truncate();
 
@@ -99,7 +99,7 @@ namespace TalusDB.Unit.Tests
             // clean house - unknown start state so don't test results
             DropAllTables(db);
 
-            var t = db.CreateTable2<ObjectTelemetry>(100);
+            var t = db.CreateTable<ObjectTelemetry>(100);
 
             //t.Truncate();
 
@@ -140,7 +140,7 @@ namespace TalusDB.Unit.Tests
             // clean house - unknown start state so don't test results
             DropAllTables(db);
 
-            var t = db.CreateTable2<ObjectTelemetry>(30);
+            var t = db.CreateTable<ObjectTelemetry>(30);
 
             Assert.Equal(0, t.Count);
 

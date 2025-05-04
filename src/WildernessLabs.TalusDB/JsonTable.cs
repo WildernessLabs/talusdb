@@ -32,7 +32,7 @@ public class JsonTable<T> : ITable<T>
 
     private FileStream? _stream = null;
     private readonly FileInfo _fileInfo;
-    private object _syncRoot = new();
+    private readonly object _syncRoot = new();
 
     public bool IsFull { get; private set; }
     public int MaxBlocks { get; }
@@ -349,5 +349,10 @@ public class JsonTable<T> : ITable<T>
 
             return item;
         }
+    }
+
+    public void Truncate()
+    {
+        throw new NotImplementedException();
     }
 }

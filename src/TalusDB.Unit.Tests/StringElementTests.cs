@@ -74,7 +74,7 @@ public class StringElementTests : TestBase
         Assert.Equal(0, t.Count);
         Assert.NotNull(item2);
 
-        Assert.Equal(item, item2.Value);
+        Assert.Equal(item, item2);
 
     }
 
@@ -105,7 +105,7 @@ public class StringElementTests : TestBase
         Assert.Equal(0, t.Count);
         Assert.NotNull(item2);
 
-        Assert.Equal(item, item2.Value);
+        Assert.Equal(item, item2);
 
     }
 }

@@ -25,7 +25,7 @@ public class StringSupportTests : TestBase
         var result1 = t.Remove();
 
         Assert.NotNull(result1);
-        Assert.Equal(maxLengthString, result1.Value.Name);
+        Assert.Equal(maxLengthString, result1.Name);
     }
 
     [Fact]

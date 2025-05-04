@@ -58,7 +58,7 @@ public class StringStressTests : TestBase
         var result1 = t.Remove();
 
         Assert.NotNull(result1);
-        Assert.Equal(exactString, result1.Value.Data.TrimEnd('\0'));
+        Assert.Equal(exactString, result1.Data.TrimEnd('\0'));
 
         // Test one char over boundary (should truncate)
         var overString = new string('B', 151);
@@ -72,8 +72,8 @@ public class StringStressTests : TestBase
         var result2 = t.Remove();
 
         Assert.NotNull(result2);
-        Assert.NotEqual(overString, result2.Value.Data.TrimEnd('\0'));
-        Assert.Equal(149, result2.Value.Data.TrimEnd('\0').Length);
+        Assert.NotEqual(overString, result2.Data.TrimEnd('\0'));
+        Assert.Equal(149, result2.Data.TrimEnd('\0').Length);
     }
 
     [Fact]
@@ -97,7 +97,7 @@ public class StringStressTests : TestBase
             var result = t.Remove();
 
             Assert.NotNull(result);
-            Assert.Equal(item.Data, result.Value.Data.TrimEnd('\0'));
+            Assert.Equal(item.Data, result.Data.TrimEnd('\0'));
         }
     }
 
@@ -132,7 +132,7 @@ public class StringStressTests : TestBase
         {
             var result = t.Remove();
             Assert.NotNull(result);
-            Assert.Equal(items[i + tableSize].Data, result.Value.Data.TrimEnd('\0'));
+            Assert.Equal(items[i + tableSize].Data, result.Data.TrimEnd('\0'));
         }
     }
 
@@ -174,7 +174,7 @@ public class StringStressTests : TestBase
 
             // Compare exactly what we put in with what we got out
             var original = randomString;
-            var retrieved = result.Value.Data.TrimEnd('\0');
+            var retrieved = result.Data.TrimEnd('\0');
 
             Assert.Equal(original, retrieved);
         }
@@ -205,7 +205,7 @@ public class StringStressTests : TestBase
         // Note: The embedded null character (\0) might terminate the string early
         // We only compare up to the first \0
         var expectedResult = controlString.Split('\0')[0];
-        Assert.StartsWith(expectedResult, result.Value.Data);
+        Assert.StartsWith(expectedResult, result.Data);
     }
 
     [Fact]
@@ -249,7 +249,7 @@ public class StringStressTests : TestBase
         while (t.Count > 0)
         {
             var result = t.Remove();
-            if (result != null && !string.IsNullOrEmpty(result.Value.Data))
+            if (result != null && !string.IsNullOrEmpty(result.Data))
             {
                 validItems++;
             }
@@ -286,7 +286,7 @@ public class StringStressTests : TestBase
             var result = t.Remove();
 
             Assert.NotNull(result);
-            Assert.Equal(expected, result.Value.Data.TrimEnd('\0'));
+            Assert.Equal(expected, result.Data.TrimEnd('\0'));
         }
     }
 
@@ -319,7 +319,7 @@ public class StringStressTests : TestBase
 
             var result = t.Remove();
             Assert.NotNull(result);
-            Assert.Equal("This is test data that should persist", result.Value.Data.TrimEnd('\0'));
+            Assert.Equal("This is test data that should persist", result.Data.TrimEnd('\0'));
         }
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 
 namespace WildernessLabs.TalusDB
 {
@@ -51,7 +52,7 @@ namespace WildernessLabs.TalusDB
             RootFolder = di.FullName;
         }
 
-        private void AddTableMeta<T>() where T : struct
+        private void AddTableMeta<T>() where T : new()
         {
             var type = typeof(T);
             var path = Path.Combine(RootFolder, ".meta");
@@ -71,7 +72,7 @@ namespace WildernessLabs.TalusDB
         /// <param name="maxElements"></param>
         /// <returns></returns>
         /// <exception cref="TalusException"></exception>
-        public Table<T> CreateTable<T>(int maxElements) where T : struct
+        public ITable<T> CreateTable<T>(int maxElements) where T : new()
         {
             if (TableExists<T>())
             {
@@ -80,8 +81,7 @@ namespace WildernessLabs.TalusDB
 
             lock (_tableCache)
             {
-                var table = new Table<T>(RootFolder, maxElements, _streamBehavior);
-
+                var table = TableFactory.CreateTable<T>(RootFolder, maxElements);
                 AddTableMeta<T>();
                 _tableCache.Add(typeof(T), table);
                 TableAdded?.Invoke(this, table);
@@ -175,7 +175,7 @@ namespace WildernessLabs.TalusDB
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public bool TableExists<T>() where T : struct
+        public bool TableExists<T>() where T : new()
         {
             lock (_tableCache)
             {
@@ -197,7 +197,7 @@ namespace WildernessLabs.TalusDB
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
         /// <exception cref="TalusException"></exception>
-        public Table<T> GetTable<T>() where T : struct
+        public ITable<T> GetTable<T>() where T : new()
         {
             if (!TableExists<T>())
             {
@@ -208,7 +208,7 @@ namespace WildernessLabs.TalusDB
             {
                 if (_tableCache.ContainsKey(typeof(T)))
                 {
-                    var t = _tableCache[typeof(T)] as Table<T>;
+                    var t = _tableCache[typeof(T)] as ITable<T>;
                     if (t == null) throw new TalusException("Unable to cast table");
                     return t;
                 }
@@ -218,7 +218,22 @@ namespace WildernessLabs.TalusDB
                     throw new TalusException("Table not found");
                 }
 
-                var table = Table<T>.Open(RootFolder);
+                // Determine if it's a value type or reference type to load the correct table
+                var type = typeof(T);
+                ITable<T> table;
+
+                if (type.IsValueType)
+                {
+                    var tableType = typeof(Table<>).MakeGenericType(type);
+                    var openMethod = tableType.GetMethod("Open", BindingFlags.Static | BindingFlags.NonPublic);
+                    table = (ITable<T>)openMethod.Invoke(null, new object[] { RootFolder });
+                }
+                else
+                {
+                    var tableType = typeof(JsonTable<>).MakeGenericType(type);
+                    var openMethod = tableType.GetMethod("Open", BindingFlags.Static | BindingFlags.NonPublic);
+                    table = (ITable<T>)openMethod.Invoke(null, new object[] { RootFolder });
+                }
 
                 _tableCache.Add(typeof(T), table);
                 TableAdded?.Invoke(this, table);
@@ -249,51 +264,51 @@ namespace WildernessLabs.TalusDB
 
         ////////////////////////////////////////////////////
 
-        public ITable<T> CreateTable2<T>(int maxBlocks) where T : new()
-        {
-            if (TableExists2<T>())
-            {
-                throw new TalusException("Table already exists");
-            }
+        //public ITable<T> CreateTable2<T>(int maxBlocks) where T : new()
+        //{
+        //    if (TableExists2<T>())
+        //    {
+        //        throw new TalusException("Table already exists");
+        //    }
 
-            lock (_tableCache)
-            {
-                var table = new JsonTable<T>(RootFolder, maxBlocks);
-                AddTableMeta2<T>();
-                _tableCache.Add(typeof(T), table);
-                TableAdded?.Invoke(this, table);
-                return table;
-            }
-        }
+        //    lock (_tableCache)
+        //    {
+        //        var table = new JsonTable<T>(RootFolder, maxBlocks);
+        //        AddTableMeta2<T>();
+        //        _tableCache.Add(typeof(T), table);
+        //        TableAdded?.Invoke(this, table);
+        //        return table;
+        //    }
+        //}
 
-        public bool TableExists2<T>()
-        {
-            lock (_tableCache)
-            {
-                if (_tableCache.ContainsKey(typeof(T)))
-                {
-                    return true;
-                }
-            }
+        //public bool TableExists2<T>()
+        //{
+        //    lock (_tableCache)
+        //    {
+        //        if (_tableCache.ContainsKey(typeof(T)))
+        //        {
+        //            return true;
+        //        }
+        //    }
 
-            var type = typeof(T);
-            var path = Path.Combine(RootFolder, ".meta");
-            var lines = File.ReadAllLines(path).ToList();
-            return lines.Any(l => l.StartsWith($"{type.Name}|"));
-        }
+        //    var type = typeof(T);
+        //    var path = Path.Combine(RootFolder, ".meta");
+        //    var lines = File.ReadAllLines(path).ToList();
+        //    return lines.Any(l => l.StartsWith($"{type.Name}|"));
+        //}
 
-        private void AddTableMeta2<T>()
-        {
-            var type = typeof(T);
-            var path = Path.Combine(RootFolder, ".meta");
-            var lines = File.ReadAllLines(path).ToList();
-            if (!lines.Any(l => l.StartsWith($"{type.Name}|")))
-            {
-                lines.Add($"{type.Name}|{type.AssemblyQualifiedName}");
-                File.Delete(path);
-                File.WriteAllLines(path, lines);
-            }
-        }
+        //private void AddTableMeta2<T>()
+        //{
+        //    var type = typeof(T);
+        //    var path = Path.Combine(RootFolder, ".meta");
+        //    var lines = File.ReadAllLines(path).ToList();
+        //    if (!lines.Any(l => l.StartsWith($"{type.Name}|")))
+        //    {
+        //        lines.Add($"{type.Name}|{type.AssemblyQualifiedName}");
+        //        File.Delete(path);
+        //        File.WriteAllLines(path, lines);
+        //    }
+        //}
 
     }
 }

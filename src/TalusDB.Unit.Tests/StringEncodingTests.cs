@@ -48,7 +48,7 @@ public class StringEncodingTests : TestBase
         var result = t.Remove();
 
         Assert.NotNull(result);
-        Assert.Equal(asciiTest.Text, result.Value.Text.TrimEnd('\0'));
+        Assert.Equal(asciiTest.Text, result.Text.TrimEnd('\0'));
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public class StringEncodingTests : TestBase
         var result = t.Remove();
 
         Assert.NotNull(result);
-        Assert.Equal(extendedLatinText, result.Value.Text.TrimEnd('\0'));
+        Assert.Equal(extendedLatinText, result.Text.TrimEnd('\0'));
     }
 
     [Fact]
@@ -94,6 +94,6 @@ public class StringEncodingTests : TestBase
         var result = t.Remove();
 
         Assert.NotNull(result);
-        Assert.Equal(longText, result.Value.Text.TrimEnd('\0'));
+        Assert.Equal(longText, result.Text.TrimEnd('\0'));
     }
 }

@@ -1,16 +1,15 @@
 ﻿using WildernessLabs.TalusDB;
 
-namespace TalusDB.Unit.Tests
+namespace TalusDB.Unit.Tests;
+
+public abstract class TestBase
 {
-    public abstract class TestBase
+    protected void DropAllTables(Database db)
     {
-        protected void DropAllTables(Database db)
+        var names = db.GetTableNames();
+        foreach (var name in names)
         {
-            var names = db.GetTableNames();
-            foreach (var name in names)
-            {
-                db.DropTable(name);
-            }
+            db.DropTable(name);
         }
     }
 }
